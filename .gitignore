@@ -8,6 +8,9 @@ dist/
 # Local data (task persistence)
 tasks.json
 *.local.json
+data.sqlite
+data.sqlite-shm
+data.sqlite-wal
 
 # Logs
 npm-debug.log*

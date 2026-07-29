@@ -1,4 +1,5 @@
-import type { Task } from "../data/task";
+import type { Task } from "@task-cli/core";
+import { normalizeTitle, parseTaskId } from "@task-cli/core";
 import { TaskStore } from "../data/taskStore";
 
 const store = new TaskStore();
@@ -8,11 +9,9 @@ function formatTask(task: Task): string {
   return `${status} #${task.id} ${task.title}`;
 }
 
-export function addTask(title: string | undefined): void {
-  if (!title || title.trim().length === 0) {
-    throw new Error('Titulo da tarefa nao pode ser vazio. Uso: add "titulo da tarefa"');
-  }
-  const task = store.add(title.trim());
+export function addTask(rawTitle: string | undefined): void {
+  const title = normalizeTitle(rawTitle);
+  const task = store.add(title);
   console.log(`Tarefa adicionada: ${formatTask(task)}`);
 }
 
@@ -27,25 +26,14 @@ export function listTasks(): void {
   }
 }
 
-function parseId(rawId: string | undefined): number {
-  if (!rawId) {
-    throw new Error("Id da tarefa e obrigatorio.");
-  }
-  const id = Number(rawId);
-  if (!Number.isInteger(id) || id <= 0) {
-    throw new Error(`Id invalido: "${rawId}". Informe um numero inteiro positivo.`);
-  }
-  return id;
-}
-
 export function completeTask(rawId: string | undefined): void {
-  const id = parseId(rawId);
+  const id = parseTaskId(rawId);
   const task = store.markDone(id);
   console.log(`Tarefa concluida: ${formatTask(task)}`);
 }
 
 export function removeTask(rawId: string | undefined): void {
-  const id = parseId(rawId);
+  const id = parseTaskId(rawId);
   const task = store.remove(id);
   console.log(`Tarefa removida: ${formatTask(task)}`);
 }

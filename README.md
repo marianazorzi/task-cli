@@ -2,37 +2,64 @@
 
 # task-cli
 
-Gerenciador de tarefas via linha de comando (CLI), construído com TypeScript e Node.js, com persistência em JSON e um código tipado e organizado.
+Gerenciador de tarefas construído com TypeScript, disponível como **CLI**, **API REST** (Node.js/Express + SQLite) e **interface web** (React). Monorepo organizado em workspaces npm, com um pacote central de tipos e regras de negócio compartilhado entre as três aplicações.
 
 ## Descrição
 
-`task-cli` é uma ferramenta de linha de comando para gerenciar tarefas do dia a dia. As tarefas são salvas em um arquivo JSON local (`tasks.json`), permitindo adicionar, listar, concluir e remover tarefas de forma simples e rápida, sem depender de bancos de dados externos.
+`task-cli` nasceu como uma ferramenta de linha de comando para gerenciar tarefas do dia a dia, e evoluiu para uma arquitetura full-stack:
+
+- **CLI** (`apps/cli`) — continua funcionando de forma independente, com persistência em um arquivo JSON local (`tasks.json`).
+- **Server** (`apps/server`) — uma API REST em Express que persiste as tarefas em SQLite (via `node:sqlite`, módulo nativo do Node.js — sem dependências de compilação).
+- **Web** (`apps/web`) — uma interface React (Vite) que consome a API REST para adicionar, concluir e remover tarefas pelo navegador.
+- **Core** (`packages/core`) — tipos (`Task`) e regras de validação compartilhadas entre CLI e server, garantindo consistência de comportamento.
 
 ## Instalação
 
-Pré-requisitos: [Node.js](https://nodejs.org/) 18+ e npm.
+Pré-requisitos: [Node.js](https://nodejs.org/) **22.5+** (necessário para o módulo nativo `node:sqlite` usado pelo servidor) e npm.
 
 ```bash
-# Instale as dependências
+# Instala as dependências de todos os workspaces (core, cli, server, web)
 npm install
 
-# Compile o projeto TypeScript
+# Compila core, cli e server
 npm run build
 ```
 
-Após o build, o CLI pode ser executado com:
+## Como rodar cada parte
+
+### CLI
 
 ```bash
-node dist/index.js <comando>
+# Após o build
+npm run cli -- add "Comprar leite"
+npm run cli -- list
+
+# Ou em modo desenvolvimento (sem compilar)
+npm run cli:dev -- add "Comprar leite"
+npm run cli:dev -- list
 ```
 
-Ou, durante o desenvolvimento, sem precisar compilar:
+### API REST (server)
 
 ```bash
-npm run dev -- <comando>
+npm run server:dev
+# API disponível em http://localhost:3001/api/tasks
 ```
 
-## Comandos disponíveis
+### Interface web (React)
+
+```bash
+npm run web:dev
+# Interface disponível em http://localhost:5173
+```
+
+### Tudo junto (server + web)
+
+```bash
+npm run dev
+```
+
+## Comandos do CLI
 
 | Comando | Descrição |
 |---|---|
@@ -42,52 +69,82 @@ npm run dev -- <comando>
 | `remove <id>` | Remove uma tarefa |
 | `help` | Mostra a ajuda com os comandos disponíveis |
 
-### Exemplos de uso
+### Exemplos de uso (CLI)
 
 ```bash
-# Adicionar uma nova tarefa
-node dist/index.js add "Comprar leite"
+npm run cli -- add "Comprar leite"
 # Tarefa adicionada: [ ] #1 Comprar leite
 
-# Listar todas as tarefas
-node dist/index.js list
+npm run cli -- list
 # [ ] #1 Comprar leite
 
-# Marcar a tarefa #1 como concluída
-node dist/index.js done 1
+npm run cli -- done 1
 # Tarefa concluida: [x] #1 Comprar leite
 
-# Remover a tarefa #1
-node dist/index.js remove 1
+npm run cli -- remove 1
 # Tarefa removida: [x] #1 Comprar leite
-
-# Ver a ajuda
-node dist/index.js help
 ```
 
-As tarefas são persistidas no arquivo `tasks.json`, criado automaticamente no diretório onde o comando é executado.
+## Endpoints da API REST
+
+Base URL: `http://localhost:3001`
+
+| Método | Rota | Descrição | Corpo |
+|---|---|---|---|
+| `GET` | `/api/tasks` | Lista todas as tarefas | — |
+| `POST` | `/api/tasks` | Adiciona uma nova tarefa | `{ "title": "..." }` |
+| `PATCH` | `/api/tasks/:id/done` | Marca a tarefa como concluída | — |
+| `DELETE` | `/api/tasks/:id` | Remove a tarefa | — |
+
+Erros de validação retornam `400`, tarefas não encontradas retornam `404`, ambos no formato `{ "error": "mensagem" }`.
+
+### Exemplo com curl
+
+```bash
+curl -X POST http://localhost:3001/api/tasks -H "Content-Type: application/json" -d '{"title":"Estudar TypeScript"}'
+curl http://localhost:3001/api/tasks
+curl -X PATCH http://localhost:3001/api/tasks/1/done
+curl -X DELETE http://localhost:3001/api/tasks/1
+```
 
 ## Estrutura do projeto
 
 ```
 task-cli/
-├── src/
-│   ├── cli/
-│   │   └── commands.ts     # Lógica dos comandos do CLI (add, list, done, remove, help)
-│   ├── data/
-│   │   ├── task.ts         # Tipos/interfaces da entidade Task
-│   │   └── taskStore.ts    # Camada de persistência (leitura/escrita do JSON)
-│   └── index.ts            # Ponto de entrada do CLI (parsing de argumentos)
-├── dist/                   # Código compilado (gerado pelo build)
-├── tasks.json              # Arquivo de dados local (gerado em tempo de execução)
-├── package.json
-├── tsconfig.json
+├── packages/
+│   └── core/                    # Tipos e validação compartilhados (@task-cli/core)
+│       └── src/
+│           ├── types.ts         # Interface Task
+│           ├── validation.ts    # normalizeTitle, parseTaskId, ValidationError
+│           └── index.ts
+├── apps/
+│   ├── cli/                     # CLI standalone (persistência em JSON)
+│   │   └── src/
+│   │       ├── cli/commands.ts
+│   │       ├── data/taskStore.ts
+│   │       └── index.ts
+│   ├── server/                  # API REST (Express + node:sqlite)
+│   │   └── src/
+│   │       ├── routes/tasks.ts
+│   │       ├── taskRepository.ts
+│   │       ├── errors.ts
+│   │       ├── app.ts
+│   │       └── index.ts
+│   └── web/                     # Interface React (Vite)
+│       └── src/
+│           ├── App.tsx
+│           ├── api.ts
+│           └── main.tsx
+├── package.json                 # Workspaces raiz + scripts de orquestração
+├── tsconfig.base.json           # Configuração TypeScript strict compartilhada
 └── .gitignore
 ```
 
 ## Tecnologias usadas
 
-- [TypeScript](https://www.typescriptlang.org/) — tipagem estática e código mais seguro
-- [Node.js](https://nodejs.org/) — runtime de execução
-- [ts-node](https://typestrong.org/ts-node/) — execução direta de TypeScript em desenvolvimento
-- Persistência baseada em arquivo JSON, sem dependências externas de banco de dados
+- [TypeScript](https://www.typescriptlang.org/) — tipagem estática em todo o monorepo
+- [Node.js](https://nodejs.org/) (22.5+) — runtime, incluindo o módulo nativo `node:sqlite`
+- [Express](https://expressjs.com/) — API REST
+- [React](https://react.dev/) + [Vite](https://vitejs.dev/) — interface web
+- npm workspaces — organização do monorepo
+- Persistência em JSON (CLI) e SQLite (server), sem dependências nativas de compilação

@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
-import type { Task } from "./task";
+import type { Task } from "@task-cli/core";
 
 const DATA_FILE = resolve(process.cwd(), "tasks.json");
 

@@ -1,0 +1,21 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f4f4f5;
+  color: #1a1a1a;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #18181b;
+    color: #f4f4f5;
+  }
+}
