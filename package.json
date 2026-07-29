@@ -1,0 +1,28 @@
+{
+  "name": "task-cli",
+  "version": "1.0.0",
+  "description": "Command-line task manager built with TypeScript and Node.js, featuring JSON-based persistence and a clean, typed codebase.",
+  "main": "dist/index.js",
+  "bin": {
+    "task-cli": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "test": "node --test dist/test/**/*.test.js"
+  },
+  "keywords": [
+    "cli",
+    "task-manager",
+    "typescript",
+    "todo"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0"
+  }
+}
